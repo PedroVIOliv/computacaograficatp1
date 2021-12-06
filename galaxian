@@ -409,49 +409,6 @@ void teclado(unsigned char key, int x, int y) {
    }
 }
 
-/*void movimenta_tiros(){ //movimenta_tiros sem colisão
-    if(quantidade_tiros>=0){
-        for(int i = 0; i < quantidade_tiros; i++){
-                if(tiros[i].y < 500){
-                    tiros[i].y += tamanho_tiros.comprimento;
-                }
-        }
-    }
-}*/
-
-/*void movimenta_tiros(){ //movimenta_tiros com colisão
-    if(quantidade_tiros>=0){
-        for(int i = 0; i < quantidade_tiros; i++){
-                if(tiros[i].y < 500){
-                    for(int j = 0; j < quantidade_inimigos; j++){
-                        if(inimigos[j].y < 500){
-                            if(tiros[i].y == inimigos[j].y){
-                                if(colisao(tiros[i], inimigos[j]) == 1){
-                                    tiros[i].colidiu = true;
-                                    inimigos[j].colidiu = true;
-                                    inimigos[j].x = 500;
-                                    continue;
-                                }
-
-                                else{
-                                    tiros[i].y += tamanho_tiros.comprimento;
-                                }
-                            }
-                            else{
-                                tiros[i].y += tamanho_tiros.comprimento;
-                            }
-                        }
-                        else{
-                            tiros[i].y += tamanho_inimigos.comprimento;
-                        }
-                    }
-                    //tiros[i].y += tamanho_tiros.comprimento;
-                }
-        }
-    }
-}*/
-
-
 void movimenta_tiros(){ //movimenta_tiros com colisão
     if(quantidade_tiros>=0){
         for(int i = 0; i < quantidade_tiros; i++){
@@ -475,6 +432,9 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                                         inimigos = (Posicao *) realloc(inimigos, (quantidade_inimigos +2) * sizeof(Posicao));
                                         quantidade_tiros = 0;
                                         inicializa();
+                                        if(quantidade_inimigos > 21){
+                                            quantidade_inimigos = 21;
+                                        }
                                     }
                                 }
                             }
