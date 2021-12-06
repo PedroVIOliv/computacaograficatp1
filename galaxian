@@ -1,0 +1,530 @@
+#include <GL/glew.h>
+#include <GL/freeglut.h>
+#include <stdlib.h>
+#include <time.h>
+//#include <SDL2/SDL.h>
+
+
+class Tela{
+public:
+    int posPlayer;
+    int tiles[16][16];
+    int gameover = 0;
+
+};
+
+class Posicao{
+public:
+    float x;
+    float y;
+    bool colidiu = false;
+};
+
+class Tamanho{
+public:
+    float largura;
+    float comprimento;
+};
+
+Posicao posicao_player;
+Tamanho tamanho_player;
+Posicao *tiros = (Posicao*) malloc(1 * sizeof (Posicao));
+Posicao *inimigos = (Posicao*) malloc(5 * sizeof (Posicao)); //Começar com cinco inimigos
+Tamanho tamanho_tiros;
+int quantidade_tiros = 0;
+int quantidade_inimigos = 5;
+bool paused = false;
+int nivel = 1; //nivel == 0, tela inicial
+//Vetor que marca quais posições podem ter inimigos
+Posicao *posicao_inimigos = (Posicao*) malloc(21 * sizeof(Posicao)); //No máximo, 21 inimigos
+Tamanho tamanho_inimigos;
+int inimigos_mortos = 0;
+
+int colisao(Posicao tiro, Posicao personagem){ //Nem usei
+    if(tiro.y + tamanho_tiros.largura < personagem.y){
+        return 0;
+    }
+    else if(tiro.y > personagem.y + tamanho_inimigos.largura){
+        return 0;
+    }
+    else if(tiro.x + tamanho_tiros.largura < personagem.x){
+        return 0;
+    }
+    else if(tiro.x > personagem.x + tamanho_inimigos.largura){
+        return 0;
+    }
+    else{
+        return 1;
+    }
+
+}
+
+void inicializa(){
+    glClear(GL_COLOR_BUFFER_BIT);
+    //glClearColor(1.0, 1.0, 1.0, 1.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    quantidade_tiros = 0;
+    posicao_player.x = 240;
+    posicao_player.y = 0;
+    tamanho_player.comprimento = 30;
+    tamanho_player.largura = 10;
+    tamanho_tiros.comprimento = 5;
+    tamanho_tiros.largura = 2;
+    tamanho_inimigos.comprimento = 18;
+    tamanho_inimigos.largura = 18;
+    int k = 0;
+    int distancia_x = 20;
+    int distancia_y = 450;
+    for(int i = 0; i< 3; i++){
+        for(int j = 0; j < 7; j++){
+            posicao_inimigos[k].x = distancia_x;
+            posicao_inimigos[k].y = distancia_y;
+            distancia_x += 50;
+            k++;
+        }
+        distancia_y -= 60;
+        distancia_x = 20;
+    }
+    int posicao_aleatoria = 0;
+    srand(time(NULL));
+    for(int i = 0; i < quantidade_inimigos; i++){
+            //srand(time(NULL));
+            posicao_aleatoria = rand() % 21;
+            if(posicao_inimigos[posicao_aleatoria].x != NULL){
+                inimigos[i].x = posicao_inimigos[posicao_aleatoria].x;
+                inimigos[i].y = posicao_inimigos[posicao_aleatoria].y;
+                posicao_inimigos[posicao_aleatoria].x = NULL;
+                inimigos[i].colidiu = false;
+            }
+            else{
+                i--;
+            }
+    }
+
+}
+
+Tela criaFase(Tela tela,int nivel){ // nivel começa em 1
+    int i=15;
+    int j = 15;
+    tela.posPlayer = 8;
+    for(i;i>=0;i--){ //marcará inimigos com base no nivel
+        if(nivel>1){
+            nivel -=2;
+            for(j;j>=0;j--){
+                tela.tiles[i][j]==1;//1 marcará inimigo
+            }
+        }
+        else{
+            if(nivel == 1){
+                nivel-=1;
+                for(j;j>=0;j--){
+                tela.tiles[i][j]==1;//1 marcará inimigo até metade da linha
+                }
+                break;
+            }
+            else break;
+        }
+    }
+    return tela;
+}
+
+/*void desenha(){ //desenha sem colisão
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0, 0, 1);
+
+    glBegin(GL_POLYGON);
+        glVertex3f(posicao_player.x, posicao_player.y, 1);
+        glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y, 1);
+        glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y + tamanho_player.comprimento, 1);
+        glVertex3f(posicao_player.x, posicao_player.y + tamanho_player.comprimento, 1);
+    glEnd();
+
+    glColor3f(0, 0, 0);
+    if(quantidade_tiros >= -1){
+        for(int i = 0; i < quantidade_tiros; i++){
+            glBegin(GL_POLYGON);
+                glVertex3f(tiros[i].x, tiros[i].y, 1);
+                glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y, 1);
+                glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y + tamanho_tiros.comprimento, 1);
+                glVertex3f(tiros[i].x, tiros[i].y + tamanho_tiros.comprimento, 1);
+            glEnd();
+        }
+    }
+    glColor3f(1, 0, 0);
+    if(nivel ==1){
+        for(int i = 0; i < quantidade_inimigos; i++){
+            glBegin(GL_POLYGON);
+                glVertex3f(inimigos[i].x, inimigos[i].y, 1);
+                glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y, 1);
+                glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+                glVertex3f(inimigos[i].x, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+            glEnd();
+        }
+    }
+
+    glutSwapBuffers();
+    //glutPostRedisplay();
+    //glutTimerFunc(periodo, desenha, periodo);
+
+}*/
+
+void desenha(){ //desenha com colisão
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0, 0, 1);
+
+    //Desenhar jogador
+    glBegin(GL_POLYGON);
+        glVertex3f(posicao_player.x, posicao_player.y, 1);
+        glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y, 1);
+        glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y + tamanho_player.comprimento, 1);
+        glVertex3f(posicao_player.x, posicao_player.y + tamanho_player.comprimento, 1);
+    glEnd();
+
+    //Desenhar tiros
+    //glColor3f(0, 0, 0);
+    glColor3f(1, 1, 1);
+    //if(quantidade_tiros >= -1){
+        for(int i = 0; i < quantidade_tiros; i++){
+            if(!tiros[i].colidiu){
+                glBegin(GL_POLYGON);
+                    glVertex3f(tiros[i].x, tiros[i].y, 1);
+                    glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y, 1);
+                    glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y + tamanho_tiros.comprimento, 1);
+                    glVertex3f(tiros[i].x, tiros[i].y + tamanho_tiros.comprimento, 1);
+                glEnd();
+            }
+        }
+    //}
+    //Desenhar inimigos
+    glColor3f(1, 0, 0);
+    //if(nivel == 1){
+        for(int i = 0; i < quantidade_inimigos; i++){
+            if(!inimigos[i].colidiu){
+                glBegin(GL_POLYGON);
+                    glVertex3f(inimigos[i].x, inimigos[i].y, 1);
+                    glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y, 1);
+                    glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+                    glVertex3f(inimigos[i].x, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+                glEnd();
+            }
+        }
+    //}
+
+    glutSwapBuffers();
+    //glutPostRedisplay();
+    //glutTimerFunc(periodo, desenha, periodo);
+
+}
+
+
+void redimensiona(int w, int h) {
+    glViewport(0, 0, w, h);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, 500, 0, 500, -1, 1);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+
+
+Tela atualizaFase(Tela tela, int acao){//atualiza o jogo com o passar do tempo
+//acao é o input do jogador, -1 se foi para a esquerda, 0 se n fez nada, 1 se foi para a direita e 2 se atirou
+
+    switch(acao){
+    case 1:
+        if(tela.posPlayer<15)tela.posPlayer+=1;
+        break;
+    case -1:
+        if(tela.posPlayer>0)tela.posPlayer-=1;
+        break;
+    case 2:
+        if(tela.tiles[15][tela.posPlayer]==1){
+            tela.tiles[15][tela.posPlayer] = 0;
+        }
+        else{
+            tela.tiles[15][tela.posPlayer] = 2;
+        }
+    }
+
+    int i,j;
+
+    for(i = 15;i>=0;i--){ //atualiza grid
+        if(i%2!=0){
+            for(j=0;j<16;j++){ //da esquerda pra direita
+                switch(tela.tiles[i][j]){
+                case 1://inimigo
+                    if(j>0){
+                        if(tela.tiles[i][j-1]==0)tela.tiles[i][j-1]=tela.tiles[i][j]; //inimigo anda pra esquerda
+                        else tela.tiles[i][j-1] = 0; //com obstruçao, obstrucao e inimigo morrem
+                        tela.tiles[i][j] = 0;
+                    }
+                    else{
+                        if(i == 15){
+                            tela.gameover = 1;
+                            return tela;
+                        }else{
+                            if(tela.tiles[i+1][j]==0)tela.tiles[i+1][j]=tela.tiles[i][j]; //inimigo anda pra baixo
+                        else tela.tiles[i+1][j] = 0; //com obstruçao, obstrucao e inimigo morrem
+                        tela.tiles[i][j] = 0;
+                        }
+                    }
+                    break;
+                case 2://tiro amadurecendo
+                    tela.tiles[i][j] = 4; //tiro se prepara para andar 2 vezes
+                    break;
+                case 3://tiro anda
+                    if(i==0)tela.tiles[i][j] = 0;
+                    else{
+                    if(tela.tiles[i-1][j]==1){
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=0;
+                    }
+                    else{
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=2;
+                    }}
+                    break;
+                case 4://tiro anda
+                    if(i==0)tela.tiles[i][j] = 0;
+                    else{
+                    if(tela.tiles[i-1][j]==1){
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=0;
+                    }
+                    else{
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=3;
+                    }}
+                    break;
+            }
+        }
+    }else{
+            for(j=15;j>=0;j--){ //da direita pra esquerda
+                switch(tela.tiles[i][j]){
+                case 1://inimigo
+                    if(j<16){
+                        if(tela.tiles[i][j+1]==0)tela.tiles[i][j+1]=tela.tiles[i][j]; //inimigo anda pra esquerda
+                        else tela.tiles[i][j+1] = 0; //com obstruçao, obstrucao e inimigo morrem
+                        tela.tiles[i][j] = 0;
+                    }
+                    else{
+                        if(i == 15){
+                            tela.gameover = 1;
+                            return tela;
+                        }else{
+                            if(tela.tiles[i+1][j]==0)tela.tiles[i+1][j]=tela.tiles[i][j]; //inimigo anda pra baixo
+                        else tela.tiles[i+1][j] = 0; //com obstruçao, obstrucao e inimigo morrem
+                        tela.tiles[i][j] = 0;
+                        }
+                    }
+                    break;
+                case 2://tiro amadurecendo
+                    tela.tiles[i][j] = 4; //tiro se prepara para andar 2 vezes
+                    break;
+                case 3://tiro anda
+                    if(i==0)tela.tiles[i][j] = 0;
+                    else{
+                    if(tela.tiles[i-1][j]==1){
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=0;
+                    }
+                    else{
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=2;
+                    }}
+                    break;
+                case 4://tiro anda
+                    if(i==0)tela.tiles[i][j] = 0;
+                    else{
+                    if(tela.tiles[i-1][j]==1){
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=0;
+                    }
+                    else{
+                        tela.tiles[i][j] = 0;
+                        tela.tiles[i-1][j]=3;
+                    }
+                    }
+                    break;
+                }
+            }
+        }
+
+
+    }
+}
+
+void teclado(unsigned char key, int x, int y) {
+   switch(key) {
+      // Tecla ESC
+      case 27:
+         free(tiros);
+         free(inimigos);
+         free(posicao_inimigos);
+         exit(0);
+         break;
+      case 100: //Tecla "d" - Vai para direita
+        if(posicao_player.x < 490 && paused == false){
+            posicao_player.x += tamanho_player.largura;
+        }
+        break;
+      case 97: //Tecla "a" - Vai para esquerda
+        if(posicao_player.x > 0 && paused == false){
+            posicao_player.x -= tamanho_player.largura;
+        }
+        break;
+      case 32: //Tecla "Espaço" - Atira
+          if(paused == false){
+              quantidade_tiros++;
+              tiros = (Posicao *) realloc(tiros, (quantidade_tiros+2) * sizeof(Posicao));
+              tiros[quantidade_tiros-1].x = posicao_player.x + (tamanho_player.largura)/2;
+              tiros[quantidade_tiros - 1].y = posicao_player.y + tamanho_player.comprimento;
+          }
+          break;
+      case 114: // Tecla "r" - Reinicia o jogo
+        inicializa();
+        break;
+      case 50: //Tecla "2" - Dá dois tiros ao mesmo tempo
+        if(paused == false){
+            quantidade_tiros += 2;
+            tiros = (Posicao *) realloc(tiros, (quantidade_tiros + 7) * sizeof(Posicao));
+            tiros[quantidade_tiros-2].x = posicao_player.x;
+            tiros[quantidade_tiros - 2].y = posicao_player.y + tamanho_player.comprimento;
+            tiros[quantidade_tiros - 1].x = posicao_player.x + tamanho_player.largura - tamanho_tiros.largura;
+            tiros[quantidade_tiros - 1].y = posicao_player.y + tamanho_player.comprimento;
+        }
+        break;
+      case 112: //Tecla "p" - Pausa ou despausa o jogo
+        if(paused == true){
+            paused = false;
+        }
+        else{
+            paused = true;
+        }
+      default:
+         break;
+   }
+}
+
+/*void movimenta_tiros(){ //movimenta_tiros sem colisão
+    if(quantidade_tiros>=0){
+        for(int i = 0; i < quantidade_tiros; i++){
+                if(tiros[i].y < 500){
+                    tiros[i].y += tamanho_tiros.comprimento;
+                }
+        }
+    }
+}*/
+
+/*void movimenta_tiros(){ //movimenta_tiros com colisão
+    if(quantidade_tiros>=0){
+        for(int i = 0; i < quantidade_tiros; i++){
+                if(tiros[i].y < 500){
+                    for(int j = 0; j < quantidade_inimigos; j++){
+                        if(inimigos[j].y < 500){
+                            if(tiros[i].y == inimigos[j].y){
+                                if(colisao(tiros[i], inimigos[j]) == 1){
+                                    tiros[i].colidiu = true;
+                                    inimigos[j].colidiu = true;
+                                    inimigos[j].x = 500;
+                                    continue;
+                                }
+
+                                else{
+                                    tiros[i].y += tamanho_tiros.comprimento;
+                                }
+                            }
+                            else{
+                                tiros[i].y += tamanho_tiros.comprimento;
+                            }
+                        }
+                        else{
+                            tiros[i].y += tamanho_inimigos.comprimento;
+                        }
+                    }
+                    //tiros[i].y += tamanho_tiros.comprimento;
+                }
+        }
+    }
+}*/
+
+
+void movimenta_tiros(){ //movimenta_tiros com colisão
+    if(quantidade_tiros>=0){
+        for(int i = 0; i < quantidade_tiros; i++){
+                if(tiros[i].y == 450 || tiros[i].y == 390 || tiros[i].y == 330){
+                    if((tiros[i].x >= 20 && tiros[i].x <=20 + tamanho_inimigos.largura) || (tiros[i].x >= 70 && tiros[i].x <= 70 + tamanho_inimigos.largura) || (tiros[i].x >= 120 && tiros[i].x <=120 + tamanho_inimigos.largura)
+                       ||(tiros[i].x >= 170 && tiros[i].x <= 170 + tamanho_inimigos.largura) || (tiros[i].x >= 220 && tiros[i].x <= 220 + tamanho_inimigos.largura)
+                       || (tiros[i].x >= 270 && tiros[i].x <=270 + tamanho_inimigos.largura) || (tiros[i].x >= 320 && tiros[i].x <= 320 + tamanho_inimigos.largura) ||
+                    (tiros[i].x >= 370 && tiros[i].x <= 370 + tamanho_inimigos.largura) || (tiros[i].x >= 420 && tiros[i].x <=420 + tamanho_inimigos.largura) || (tiros[i].x >= 470 && tiros[i].x <= 470 + tamanho_inimigos.largura)){
+                        for(int j = 0; j < quantidade_inimigos; j++){
+                            if(inimigos[j].y == tiros[i].y){
+                                if(tiros[i].x >= inimigos[j].x && tiros[i].x <= (inimigos[j].x + tamanho_inimigos.largura) && inimigos[j].colidiu == false){
+                                    tiros[i].colidiu = true;
+                                    tiros[i].y = 500;
+                                    inimigos[j].colidiu = true;
+                                    inimigos[j].y = 500;
+                                    inimigos_mortos++;
+                                    if(inimigos_mortos == quantidade_inimigos){
+                                        quantidade_inimigos++; //Aumentou a fase -> mais inimigos (TEM QUE CONSERTAR)
+                                        inimigos_mortos = 0;
+                                        tiros = (Posicao *) realloc(tiros,1 * sizeof(Posicao));
+                                        inimigos = (Posicao *) realloc(inimigos, (quantidade_inimigos +2) * sizeof(Posicao));
+                                        quantidade_tiros = 0;
+                                        inicializa();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if(tiros[i].y < 500){
+                    tiros[i].y += tamanho_tiros.comprimento;
+                }
+        }
+    }
+}
+
+
+void atualizaCena(int periodo) {
+    // Pede ao GLUT para redesenhar a tela, assim que possível
+    if(paused == false){
+        glutKeyboardFunc(teclado);
+        movimenta_tiros();
+        glutPostRedisplay();
+    }
+    //glutPostRedisplay();
+
+    // Se registra novamente, para que fique sempre sendo chamada (30 FPS)
+    glutTimerFunc(periodo, atualizaCena, periodo);
+}
+
+
+
+int main(int argc, char** argv){
+    glutInit(&argc, argv);
+
+    //glutInitContextVersion(1, 1);
+    //glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE);
+
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+    glutInitWindowSize(800, 640);
+    //glutInitWindowPosition(100, 100);
+
+    glutCreateWindow("Galaxian - TP1");
+    inicializa();
+    glutDisplayFunc(desenha);
+    glutReshapeFunc(redimensiona);
+    glutKeyboardFunc(teclado);
+    glutTimerFunc(0,atualizaCena, 11); //11
+    //glutTimerFunc(0, movimenta_tiros, 33);
+    //glutTimerFunc(0, atualizaFase, 33);
+
+
+    glutMainLoop();
+    return 0;
+}
