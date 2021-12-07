@@ -190,14 +190,15 @@ void desenha(){ //desenha com colisão
     glColor3f(1, 1, 1);
     //if(quantidade_tiros >= -1){
         for(int i = 0; i < quantidade_tiros; i++){
-            //if(!tiros[i].colidiu){
+            //condição para o programa não desenhar o tiro sempre para não perder tanto desempenho
+            if(!tiros[i].y < 500){
                 glBegin(GL_POLYGON);
                     glVertex3f(tiros[i].x, tiros[i].y, 1);
                     glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y, 1);
                     glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y + tamanho_tiros.comprimento, 1);
                     glVertex3f(tiros[i].x, tiros[i].y + tamanho_tiros.comprimento, 1);
                 glEnd();
-            //}
+            }
         }
     //}
     //Desenhar inimigos
