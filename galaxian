@@ -2,6 +2,7 @@
 #include <GL/freeglut.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 //#include <SDL2/SDL.h>
 #define DISTANCIA_X 50
 #define DISTANCIA_Y 60
@@ -35,6 +36,7 @@ Posicao posicao_player;
 Tamanho tamanho_player;
 Posicao *tiros = (Posicao*) malloc(1 * sizeof (Posicao));
 Posicao *inimigos = (Posicao*) malloc(5 * sizeof (Posicao)); //Começar com cinco inimigos
+Posicao *tiros_inimigos = (Posicao*) malloc (1 * sizeof(Posicao));
 Tamanho tamanho_tiros;
 int quantidade_tiros = 0;
 int quantidade_inimigos = 5;
@@ -44,25 +46,40 @@ int nivel = 1; //nivel == 0, tela inicial (ideia)
 Posicao *posicao_inimigos = (Posicao*) malloc(NUM_MAX_INIMIGOS * sizeof(Posicao));
 Tamanho tamanho_inimigos;
 int inimigos_mortos = 0;
+int quantidade_tiros_inimigos = 0;
+int tempo = 0;
 
-int colisao(Posicao tiro, Posicao personagem){ //Nem usei, já que nem funcionou kkkkkkkk
-    if(tiro.y + tamanho_tiros.largura < personagem.y){
-        return 0;
-    }
-    else if(tiro.y > personagem.y + tamanho_inimigos.largura){
-        return 0;
-    }
-    else if(tiro.x + tamanho_tiros.largura < personagem.x){
-        return 0;
-    }
-    else if(tiro.x > personagem.x + tamanho_inimigos.largura){
-        return 0;
+bool colisao (Posicao tiro, Posicao personagem){ //Nem usei, já que nem funcionou kkkkkkk
+    if(tiro.y == personagem.y){
+        if((tiro.x >= personagem.x) && (tiro.x <= personagem.x + tamanho_inimigos.largura)){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
     else{
-        return 1;
+        return false;
     }
 
 }
+
+void cria_tiros_inimigos(){
+    quantidade_tiros_inimigos += quantidade_inimigos;
+    tiros_inimigos = (Posicao*) realloc(tiros_inimigos, (quantidade_tiros_inimigos +10) * sizeof(Posicao));
+    int j = 0;
+    for(int i = 0; i < quantidade_tiros_inimigos; i++){
+        if(inimigos[j].colidiu == false){
+            tiros_inimigos[i].x = inimigos[j].x + (tamanho_inimigos.largura/2);
+            tiros_inimigos[i].y = inimigos[j].y;
+        }
+        j++;
+        if(j == quantidade_inimigos){
+            j = 0;
+        }
+    }
+}
+
 
 void inicializa(){
     glClear(GL_COLOR_BUFFER_BIT);
@@ -105,6 +122,7 @@ void inicializa(){
                 i--;
             }
     }
+    cria_tiros_inimigos();
 
 }
 
@@ -211,6 +229,20 @@ void desenha(){ //desenha com colisão
                     glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y, 1);
                     glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y + tamanho_inimigos.comprimento, 1);
                     glVertex3f(inimigos[i].x, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+                glEnd();
+            }
+        }
+
+        glColor3f(1, 1, 1);
+    //if(quantidade_tiros >= -1){
+        for(int i = 0; i < quantidade_tiros_inimigos; i++){
+            //condição para o programa não desenhar o tiro sempre para não perder tanto desempenho
+            if(tiros_inimigos[i].y > 0){
+                glBegin(GL_POLYGON);
+                    glVertex3f(tiros_inimigos[i].x, tiros_inimigos[i].y, 1);
+                    glVertex3f(tiros_inimigos[i].x + tamanho_tiros.largura, tiros_inimigos[i].y, 1);
+                    glVertex3f(tiros_inimigos[i].x + tamanho_tiros.largura, tiros_inimigos[i].y + tamanho_tiros.comprimento, 1);
+                    glVertex3f(tiros_inimigos[i].x, tiros_inimigos[i].y + tamanho_tiros.comprimento, 1);
                 glEnd();
             }
         }
@@ -455,12 +487,98 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
     }
 }
 
+/*void movimenta_tiros(){ //movimenta_tiros com colisão
+    if(quantidade_tiros>=0){
+        for(int i = 0; i < quantidade_tiros; i++){ //Se está em um local em que pode ter inimigo
+                if(LINHAS_INIMIGOS == 3){
+                    if(tiros[i].y == POSICAO_INICIAL_INIMIGOS_Y || tiros[i].y == (POSICAO_INICIAL_INIMIGOS_Y - DISTANCIA_Y) || tiros[i].y == POSICAO_INICIAL_INIMIGOS_Y - (2 * DISTANCIA_Y)){
+                        for(int j = 0; j < quantidade_inimigos; j++){
+                            //if(colisao(tiros[i], inimigos[j]) == true){
+                            if(tiros[i].y == inimigos[j].y){
+                                if((tiros[i].x >= inimigos[j].x) && (tiros[i].x <= inimigos[j].x + tamanho_inimigos.largura)){
+                                    tiros[i].y = 500;
+                                    inimigos[j].y = 500;
+                                    inimigos[j].colidiu = true;
+                                    inimigos_mortos +=1;
+                                    if(inimigos_mortos == quantidade_inimigos){
+                                        quantidade_inimigos++; //Aumentou a fase -> mais inimigos (TEM QUE CONSERTAR)
+                                        inimigos_mortos = 0;
+                                        tiros = (Posicao *) realloc(tiros,1 * sizeof(Posicao));
+                                        inimigos = (Posicao *) realloc(inimigos, (quantidade_inimigos +2) * sizeof(Posicao));
+                                        quantidade_tiros = 0;
+                                        inicializa();
+                                        if(quantidade_inimigos > NUM_MAX_INIMIGOS){
+                                            quantidade_inimigos = NUM_MAX_INIMIGOS;
+                                        }
+                                    }
+                                }
+                                else{
+                                    if(tiros[i].y < 500){
+                                        tiros[i].y += tamanho_tiros.comprimento;
+                                    }
+                                }
+                            }
+                            else{
+                                if(tiros[i].y < 500){
+                                    tiros[i].y += tamanho_tiros.comprimento;
+                                }
+                            }
+                        }
+                    }
+                    else{
+                        if(tiros[i].y < 500){
+                            tiros[i].y += tamanho_tiros.comprimento;
+                        }
+                    }
+                    }
+                }
+            }
+}*/
+
+
+
+void movimenta_tiros_inimigos(){
+    if(quantidade_tiros_inimigos >= 0){
+        for(int i = 0; i < quantidade_tiros_inimigos; i++){
+            if(tiros_inimigos[i].y >= 0){
+                tiros_inimigos[i].y -= tamanho_tiros.comprimento;
+            }
+        }
+    }
+}
+
 
 void atualizaCena(int periodo) {
     // Pede ao GLUT para redesenhar a tela, assim que possível
+    int variavel_controle = 0, todos_tiros_inimigos_sairam = 0, tiros_inimigos_sairam = 0;
     if(paused == false){
         glutKeyboardFunc(teclado);
         movimenta_tiros();
+        //glutPostRedisplay();
+        tempo++;
+        if(tempo % 75 == 0 || variavel_controle == 1){
+            if(variavel_controle == 0){
+                variavel_controle = 1;
+            }
+
+            for(int i = 0; i < quantidade_tiros_inimigos; i++){
+                if(tiros_inimigos[i].y < 0){
+                    tiros_inimigos_sairam++;
+                }
+                else{
+                    tiros_inimigos_sairam = 0;
+                    variavel_controle = 1;
+                }
+                if(tiros_inimigos_sairam == quantidade_tiros_inimigos){
+                    variavel_controle = 0;
+                    tempo = 0;
+                    cria_tiros_inimigos();
+                }
+            }
+            //movimenta_tiros_inimigos();
+
+        }
+        movimenta_tiros_inimigos();
         glutPostRedisplay();
     }
     //glutPostRedisplay();
@@ -469,7 +587,15 @@ void atualizaCena(int periodo) {
     glutTimerFunc(periodo, atualizaCena, periodo);
 }
 
+void atualizaTirosInimigos(int periodo){
+    if(paused == false){
+        cria_tiros_inimigos();
+        movimenta_tiros_inimigos();
+        glutPostRedisplay();
+    }
 
+    glutTimerFunc(periodo, atualizaTirosInimigos, periodo);
+}
 
 int main(int argc, char** argv){
     glutInit(&argc, argv);
@@ -487,6 +613,7 @@ int main(int argc, char** argv){
     glutReshapeFunc(redimensiona);
     glutKeyboardFunc(teclado);
     glutTimerFunc(0,atualizaCena, 11); //11
+    //glutTimerFunc(0, atualizaTirosInimigos, 120);
     //glutTimerFunc(0, movimenta_tiros, 33);
     //glutTimerFunc(0, atualizaFase, 33);
 
