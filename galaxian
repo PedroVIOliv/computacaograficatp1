@@ -7,6 +7,7 @@
 #define DISTANCIA_Y 60
 #define NUM_MAX_INIMIGOS 27 //Tem que ser múltiplo de "LINHAS_INIMIGOS"
 #define LINHAS_INIMIGOS 3 //Não muda ainda, pois tem que fazer umas alterações
+#define POSICAO_INICIAL_INIMIGOS_Y 450 //
 
 
 class Tela{
@@ -78,7 +79,7 @@ void inicializa(){
     tamanho_inimigos.largura = 18;
     int k = 0;
     int distancia_x = 20;
-    int distancia_y = 450;
+    int distancia_y = POSICAO_INICIAL_INIMIGOS_Y;
     for(int i = 0; i< LINHAS_INIMIGOS; i++){
         for(int j = 0; j < (NUM_MAX_INIMIGOS/LINHAS_INIMIGOS); j++){
             posicao_inimigos[k].x = distancia_x;
@@ -189,14 +190,14 @@ void desenha(){ //desenha com colisão
     glColor3f(1, 1, 1);
     //if(quantidade_tiros >= -1){
         for(int i = 0; i < quantidade_tiros; i++){
-            if(!tiros[i].colidiu){
+            //if(!tiros[i].colidiu){
                 glBegin(GL_POLYGON);
                     glVertex3f(tiros[i].x, tiros[i].y, 1);
                     glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y, 1);
                     glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y + tamanho_tiros.comprimento, 1);
                     glVertex3f(tiros[i].x, tiros[i].y + tamanho_tiros.comprimento, 1);
                 glEnd();
-            }
+            //}
         }
     //}
     //Desenhar inimigos
@@ -416,7 +417,7 @@ void teclado(unsigned char key, int x, int y) {
 void movimenta_tiros(){ //movimenta_tiros com colisão
     if(quantidade_tiros>=0){
         for(int i = 0; i < quantidade_tiros; i++){ //Se está em um local em que pode ter inimigo
-                if(tiros[i].y == 450 || tiros[i].y == (450-DISTANCIA_Y) || tiros[i].y == (450- 2*DISTANCIA_Y)){
+                if(tiros[i].y == POSICAO_INICIAL_INIMIGOS_Y || tiros[i].y == (POSICAO_INICIAL_INIMIGOS_Y-DISTANCIA_Y) || tiros[i].y == (POSICAO_INICIAL_INIMIGOS_Y- 2*DISTANCIA_Y)){
                     if((tiros[i].x >= 20 && tiros[i].x <=20 + tamanho_inimigos.largura) || (tiros[i].x >= (20 + DISTANCIA_X) && tiros[i].x <= (20 + DISTANCIA_X) + tamanho_inimigos.largura) || (tiros[i].x >= 20 + (2*DISTANCIA_X) && tiros[i].x <=20 + (2*DISTANCIA_X) + tamanho_inimigos.largura)
                        ||(tiros[i].x >= 20 + (3*DISTANCIA_X) && tiros[i].x <= 20 + (3*DISTANCIA_X) + tamanho_inimigos.largura) || (tiros[i].x >= 20 + (4*DISTANCIA_X) && tiros[i].x <= 20 + (4*DISTANCIA_X) + tamanho_inimigos.largura)
                        || (tiros[i].x >= 20 + (5*DISTANCIA_X) && tiros[i].x <=20 + (5*DISTANCIA_X) + tamanho_inimigos.largura) || (tiros[i].x >= 20 + (6*DISTANCIA_X) && tiros[i].x <= 20 + (6*DISTANCIA_X) + tamanho_inimigos.largura) ||
@@ -436,8 +437,8 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                                         inimigos = (Posicao *) realloc(inimigos, (quantidade_inimigos +2) * sizeof(Posicao));
                                         quantidade_tiros = 0;
                                         inicializa();
-                                        if(quantidade_inimigos > 21){
-                                            quantidade_inimigos = 21;
+                                        if(quantidade_inimigos > NUM_MAX_INIMIGOS){
+                                            quantidade_inimigos = NUM_MAX_INIMIGOS;
                                         }
                                     }
                                 }
