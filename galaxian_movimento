@@ -539,7 +539,7 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
     if(quantidade_tiros > 0){
         for(int i = 0; i < quantidade_tiros; i++){
             for(int j  = 0; j < quantidade_inimigos; j++){
-                if(tiros[i].y == inimigos[j].y){
+                if(tiros[i].y == inimigos[j].y || tiros[i].y >= inimigos[j].y && tiros[i].y <= inimigos[j].y + tamanho_inimigos.comprimento){
                     if(tiros[i].x >= inimigos[j].x && tiros[i].x <= inimigos[j].x + tamanho_inimigos.largura || tiros[i].x + tamanho_tiros.largura >= inimigos[j].x && tiros[i].x + tamanho_tiros.largura <= inimigos[j].x + tamanho_inimigos.largura){
                         tiros[i].y = 500;
                         inimigos[j].colidiu = true;
