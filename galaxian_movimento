@@ -576,7 +576,7 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
 void movimenta_tiros_inimigos(){
     if(quantidade_tiros_inimigos >= 0){
         for(int i = 0; i < quantidade_tiros_inimigos; i++){
-            if(tiros_inimigos[i].y == tamanho_player.comprimento){
+            if(tiros_inimigos[i].y == tamanho_player.comprimento || tiros_inimigos[i].y >= 0 && tiros_inimigos[i].y <= tamanho_player.comprimento){
                 if(tiros_inimigos[i].x >= posicao_player.x && tiros_inimigos[i].x <= posicao_player.x + tamanho_player.largura){
                     tiros_inimigos[i].colidiu = true;
                     quantidade_tiros_inimigos = 0;
