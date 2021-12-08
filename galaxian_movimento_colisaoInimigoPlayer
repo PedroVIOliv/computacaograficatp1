@@ -66,13 +66,18 @@ int primeiro_tiro = 0;
 
 
 void cria_tiros_inimigos(){
-    quantidade_tiros_inimigos += quantidade_inimigos;
+    quantidade_tiros_inimigos += (quantidade_inimigos - inimigos_mortos);
     tiros_inimigos = (Posicao*) realloc(tiros_inimigos, (quantidade_tiros_inimigos + 4) * sizeof(Posicao));
     int j = 0;
     for(int i = 0; i < quantidade_tiros_inimigos; i++){
         if(inimigos[j].colidiu == false){
             tiros_inimigos[i].x = inimigos[j].x + (tamanho_inimigos.largura/2);
             tiros_inimigos[i].y = inimigos[j].y;
+        }
+        else{
+            tiros_inimigos[i].x = inimigos[j+1].x + (tamanho_inimigos.largura/2);
+            tiros_inimigos[i].y = inimigos[j+1].y;
+            j++;
         }
         j++;
         if(j == quantidade_inimigos){
@@ -127,6 +132,7 @@ void inicializa(){
     }
     tempo = -200;
     primeiro_tiro = 0;
+    inimigos_mortos = 0;
 
 }
 
@@ -421,7 +427,7 @@ void teclado(unsigned char key, int x, int y) {
       case 32: //Tecla "Espaço" - Atira
           if(paused == false){
               quantidade_tiros++;
-              tiros = (Posicao *) realloc(tiros, (quantidade_tiros+2) * sizeof(Posicao));
+              tiros = (Posicao *) realloc(tiros, (quantidade_tiros+4) * sizeof(Posicao));
               tiros[quantidade_tiros-1].x = posicao_player.x + (tamanho_player.largura)/2;
               tiros[quantidade_tiros - 1].y = posicao_player.y + tamanho_player.comprimento;
           }
@@ -477,57 +483,69 @@ void teclado(unsigned char key, int x, int y) {
 
 void movimenta_inimigos(){
     for(int i = 0; i < quantidade_inimigos; i++){
-        //printf("Que y: %.2f\n", inimigos[i].y);
-        if(inimigos[i].y == 450){
-            inimigos[i].x -= tamanho_inimigos.largura/2;
-            if(inimigos[i].x >= 2 && inimigos[i].x <= 8){
-                inimigos[i].y -= tamanho_inimigos.comprimento/2;
-                inimigos[i].esquerdaDireita = 1;//agora vai para direita
-                inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
-                inimigos[i].jaMoveuParaBaixo = 1;
-            }
-        }
-        else if(inimigos[i].y == 390){
-            inimigos[i].x += tamanho_inimigos.largura/2;
-            if(inimigos[i].x >= 482 && inimigos[i].x <= 488){
-                inimigos[i].y -= tamanho_inimigos.comprimento/2;
-                inimigos[i].esquerdaDireita = 0;
-                inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
-                inimigos[i].jaMoveuParaBaixo = 1;
-            }
-        }
-        else if((inimigos[i].y + tamanho_inimigos.largura <= tamanho_player.comprimento && inimigos[i].y > 0) && (inimigos[i].x <= posicao_player.x + tamanho_player.largura && inimigos[i].x + tamanho_inimigos.largura >= posicao_player.x + tamanho_player.largura || inimigos[i].x + tamanho_inimigos.largura >= posicao_player.x && inimigos[i].x + tamanho_inimigos.largura <= posicao_player.x + tamanho_player.largura)){
-                inicializa();
-        }
-        else if(inimigos[i].y <= 0){
-            inicializa();
-        }
-        else{
-            if(inimigos[i].faltaPara45 > 0 && inimigos[i].jaMoveuParaBaixo == 1){
-                if(inimigos[i].faltaPara45 > 3){
-                    inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
+        if(inimigos[i].colidiu == false){
+            //printf("Que y: %.2f\n", inimigos[i].y);
+            if(inimigos[i].y == 450){
+                inimigos[i].x -= tamanho_inimigos.largura/2;
+                if(inimigos[i].x >= 2 && inimigos[i].x <= 8){
                     inimigos[i].y -= tamanho_inimigos.comprimento/2;
+                    inimigos[i].esquerdaDireita = 1;//agora vai para direita
+                    inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
+                    inimigos[i].jaMoveuParaBaixo = 1;
                 }
-                else{
-                    inimigos[i].y -= 3;
-                    inimigos[i].faltaPara45 -= 3;
+            }
+            else if(inimigos[i].y == 390){
+                inimigos[i].x += tamanho_inimigos.largura/2;
+                if(inimigos[i].x >= 482 && inimigos[i].x <= 488){
+                    inimigos[i].y -= tamanho_inimigos.comprimento/2;
+                    inimigos[i].esquerdaDireita = 0;
+                    inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
+                    inimigos[i].jaMoveuParaBaixo = 1;
                 }
+            }
+            else if((inimigos[i].y + tamanho_inimigos.largura <= tamanho_player.comprimento && inimigos[i].y > 0) && (inimigos[i].x <= posicao_player.x + tamanho_player.largura && inimigos[i].x + tamanho_inimigos.largura >= posicao_player.x + tamanho_player.largura || inimigos[i].x + tamanho_inimigos.largura >= posicao_player.x && inimigos[i].x + tamanho_inimigos.largura <= posicao_player.x + tamanho_player.largura)){
+                    quantidade_tiros = 0;
+                    quantidade_tiros_inimigos = 0;
+                    tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
+                    inimigos = (Inimigo*) realloc(inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
+                    inimigos_mortos = 0;
+                    inicializa();
+            }
+            else if(inimigos[i].y <= 0){
+                    quantidade_tiros = 0;
+                    quantidade_tiros_inimigos = 0;
+                    tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
+                    inimigos = (Inimigo*) realloc(inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
+                    inimigos_mortos = 0;
+                    inicializa();
             }
             else{
-                if(inimigos[i].esquerdaDireita == 0){
-                    inimigos[i].x -= tamanho_inimigos.largura/2;
-                    if(inimigos[i].x >= 2 && inimigos[i].x <= 8){
-                        inimigos[i].esquerdaDireita =1;
-                        inimigos[i].faltaPara45 = 45;
-                        inimigos[i].jaMoveuParaBaixo = 1;
+                if(inimigos[i].faltaPara45 > 0 && inimigos[i].jaMoveuParaBaixo == 1){
+                    if(inimigos[i].faltaPara45 > 3){
+                        inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
+                        inimigos[i].y -= tamanho_inimigos.comprimento/2;
+                    }
+                    else{
+                        inimigos[i].y -= 3;
+                        inimigos[i].faltaPara45 -= 3;
                     }
                 }
                 else{
-                    inimigos[i].x += tamanho_inimigos.largura/2;
-                    if(inimigos[i].x >= 482 && inimigos[i].x <= 488){
-                        inimigos[i].esquerdaDireita = 0;
-                        inimigos[i].faltaPara45 = 45;
-                        inimigos[i].jaMoveuParaBaixo = 1;
+                    if(inimigos[i].esquerdaDireita == 0){
+                        inimigos[i].x -= tamanho_inimigos.largura/2;
+                        if(inimigos[i].x >= 2 && inimigos[i].x <= 8){
+                            inimigos[i].esquerdaDireita =1;
+                            inimigos[i].faltaPara45 = 45;
+                            inimigos[i].jaMoveuParaBaixo = 1;
+                        }
+                    }
+                    else{
+                        inimigos[i].x += tamanho_inimigos.largura/2;
+                        if(inimigos[i].x >= 482 && inimigos[i].x <= 488){
+                            inimigos[i].esquerdaDireita = 0;
+                            inimigos[i].faltaPara45 = 45;
+                            inimigos[i].jaMoveuParaBaixo = 1;
+                        }
                     }
                 }
             }
@@ -539,19 +557,20 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
     if(quantidade_tiros > 0){
         for(int i = 0; i < quantidade_tiros; i++){
             for(int j  = 0; j < quantidade_inimigos; j++){
-                if(tiros[i].y == inimigos[j].y || tiros[i].y >= inimigos[j].y && tiros[i].y <= inimigos[j].y + tamanho_inimigos.comprimento){
+                if(tiros[i].y == inimigos[j].y || tiros[i].y >= inimigos[j].y && tiros[i].y <= inimigos[j].y + tamanho_inimigos.comprimento && inimigos[j].colidiu == false){
                     if(tiros[i].x >= inimigos[j].x && tiros[i].x <= inimigos[j].x + tamanho_inimigos.largura || tiros[i].x + tamanho_tiros.largura >= inimigos[j].x && tiros[i].x + tamanho_tiros.largura <= inimigos[j].x + tamanho_inimigos.largura){
                         tiros[i].y = 500;
                         inimigos[j].colidiu = true;
-                        inimigos[j].y = 500;
+                        //tiros[i].colidiu = true;
+                        inimigos[j].y = 550;
                         inimigos[j].x = -30;
                         inimigos_mortos++;
-                        //printf("Inimigos mortos: %d\n", inimigos_mortos);
+                        printf("Inimigos mortos: %d\n", inimigos_mortos);
+                        printf("Quantidade de inimigos vivos restantes: %d\n", quantidade_inimigos - inimigos_mortos);
                         if(inimigos_mortos == quantidade_inimigos){
-
                             quantidade_inimigos++; //próxima fase
                             inimigos_mortos = 0;
-                            tiros = (Posicao*) realloc(tiros, 1 * sizeof(Posicao));
+                            tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
                             //inimigos = (Posicao*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Posicao));
                             inimigos = (Inimigo*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
                             quantidade_tiros = 0;
@@ -582,7 +601,7 @@ void movimenta_tiros_inimigos(){
                     quantidade_tiros_inimigos = 0;
                     quantidade_tiros = 0;
                     inimigos_mortos = 0;
-                    tiros = (Posicao*) realloc(tiros, 1 * sizeof(Posicao));
+                    tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
                     tiros_inimigos = (Posicao*) realloc(tiros_inimigos, 1 * sizeof(Posicao));
                     //inimigos = (Posicao*) realloc(inimigos, (quantidade_inimigos + 3)* sizeof(Posicao));
                     inimigos = (Inimigo*) realloc(inimigos, (quantidade_inimigos + 3)* sizeof(Inimigo));
@@ -635,23 +654,13 @@ void atualizaCena(int periodo) {
                 movimenta_inimigos();
             }
         }
-        //movimenta_tiros_inimigos();
+        movimenta_tiros_inimigos();
         glutPostRedisplay();
     }
     //glutPostRedisplay();
 
     // Se registra novamente, para que fique sempre sendo chamada (30 FPS)
     glutTimerFunc(periodo, atualizaCena, periodo);
-}
-
-void atualizaTirosInimigos(int periodo){
-    if(paused == false){
-        cria_tiros_inimigos();
-        movimenta_tiros_inimigos();
-        glutPostRedisplay();
-    }
-
-    glutTimerFunc(periodo, atualizaTirosInimigos, periodo);
 }
 
 int main(int argc, char** argv){
