@@ -4,11 +4,13 @@
 #include <time.h>
 #include <stdio.h>
 //#include <SDL2/SDL.h>
-#define DISTANCIA_X 50
-#define DISTANCIA_Y 60
-#define NUM_MAX_INIMIGOS 27 //Tem que ser múltiplo de "LINHAS_INIMIGOS"
-#define LINHAS_INIMIGOS 3 //Não muda ainda, pois tem que fazer umas alterações
-#define POSICAO_INICIAL_INIMIGOS_Y 450 //
+#define DISTANCIA_X 50 //Distancia horizontal inicial entre cada inimigo, considerando a posicao "x" de cada inimigo
+#define DISTANCIA_Y 60 //Distancia vertical inicial entre cada inimigo, considerando a posicao "y" de cada inimigo
+#define NUM_MAX_INIMIGOS 27 //Tem que ser múltiplo de "LINHAS_INIMIGOS"    || NUM_MAX_INIMIGOS / LINHAS_INIMIGOS resulta em quantas colunas de inimigos
+#define LINHAS_INIMIGOS 3 //Quantas linhas de inimigos vai ter
+#define POSICAO_INICIAL_INIMIGOS_Y 450
+#define TAMANHO_MINIMO_INIMIGOS 6
+#define VARIACAO_TAMANHO_INIMIGOS 0.2
 
 
 class Tela{
@@ -45,43 +47,43 @@ public:
 Posicao posicao_player;
 Tamanho tamanho_player;
 Posicao *tiros = (Posicao*) malloc(1 * sizeof (Posicao));
-//Posicao *inimigos = (Posicao*) malloc(5 * sizeof (Posicao)); //Começar com cinco inimigos
-Inimigo *inimigos = (Inimigo*) malloc(20 * sizeof (Inimigo)); //Começar com cinco inimigos
+Inimigo *inimigos = (Inimigo*) malloc(5 * sizeof (Inimigo)); //Começar com cinco inimigos
 Posicao *tiros_inimigos = (Posicao*) malloc (1 * sizeof(Posicao));
 Tamanho tamanho_tiros;
 int quantidade_tiros = 0;
-int quantidade_inimigos = 20;
-bool paused = false;
-int nivel = 1; //nivel == 0, tela inicial (ideia)
+int quantidade_inimigos = 5;
+bool paused = false; //Variavel que determinará se o jogo está pausado ou não
+int nivel = 1; //nivel -1 vai ser o menu, o nivel 0 vai ser as instruções, os niveis maiores que 0 vão ser as fases
+
 //Vetor que marca quais posições podem ter inimigos
 Posicao *posicao_inimigos = (Posicao*) malloc(NUM_MAX_INIMIGOS * sizeof(Posicao));
 Tamanho tamanho_inimigos;
 int inimigos_mortos = 0;
 int quantidade_tiros_inimigos = 0;
-int tempo = -200;
-int tempo_tiro = 300;
-float variacao_nivel = 1; //da velocidade
+int tempo = -200; //Variável de controle para determinarmos o "tempo" que cada evento acontecerá
+int tempo_tiro = 300; //Frequência inicial dos tiros dos inimigos
+float variacao_nivel = 1; //velocidade dos tiros_inimigos
 int primeiro_tiro = 0;
 float tamanhoInimigo = 20;
 //int variacao_tempo = 1;
 
 
 void cria_tiros_inimigos(){
-    quantidade_tiros_inimigos = (quantidade_inimigos - inimigos_mortos);
+    quantidade_tiros_inimigos = (quantidade_inimigos - inimigos_mortos); //Vai criar tiros na mesma quantidade dos inimigos vivos
     tiros_inimigos = (Posicao*) realloc(tiros_inimigos, (quantidade_tiros_inimigos + 4) * sizeof(Posicao));
     int j = 0;
     for(int i = 0; i < quantidade_tiros_inimigos; i++){
-        if(inimigos[j].colidiu == false){
+        if(inimigos[j].colidiu == false){ //Se o inimigo não colidiu, podemos criar tiros para ele
             tiros_inimigos[i].x = inimigos[j].x + (tamanho_inimigos.largura/2);
             tiros_inimigos[i].y = inimigos[j].y;
         }
-        else{
+        else{ //Se tiver colidido, vamos procurar o próximo que está vivo para dar "municao" para ele
             do{
                 j++;
-                if(j == quantidade_inimigos){
+                if(j == quantidade_inimigos){ //Pois o vetor vai de 0 até quantidade_inimigos - 1;
                     j = 0;
                 }
-            }while(inimigos[j].colidiu == true);
+            }while(inimigos[j].colidiu == true); //Enquanto não acha um inimigo "disponível"
 
             tiros_inimigos[i].x = inimigos[j].x + (tamanho_inimigos.largura/2);
             tiros_inimigos[i].y = inimigos[j].y;
@@ -100,14 +102,14 @@ void inicializa(){
     //glClearColor(1.0, 1.0, 1.0, 1.0);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     quantidade_tiros = 0;
-    posicao_player.x = 240;
+    posicao_player.x = 240; //Posicao inicial do jogador
     posicao_player.y = 0;
-    tamanho_player.comprimento = 30;
+    tamanho_player.comprimento = 30; //Tamanho do jogador
     tamanho_player.largura = 10;
-    tamanho_tiros.comprimento = 5;
+    tamanho_tiros.comprimento = 5; //Tamanho dos tiros
     tamanho_tiros.largura = 2;
-    tamanho_inimigos.comprimento = tamanhoInimigo; //12
-    tamanho_inimigos.largura = tamanhoInimigo; //12
+    tamanho_inimigos.comprimento = tamanhoInimigo; //Tamanho do inimigo, o qual vai variar com o passar das fases
+    tamanho_inimigos.largura = tamanhoInimigo;
     int k = 0;
     int distancia_x = 20;
     int distancia_y = POSICAO_INICIAL_INIMIGOS_Y;
@@ -127,7 +129,6 @@ void inicializa(){
     int variavel_controle = 0;
     srand(time(NULL));
     for(int i = 0; i < quantidade_inimigos; i++){
-            //srand(time(NULL));
             posicao_aleatoria = rand() % NUM_MAX_INIMIGOS;
             if(posicao_inimigos[posicao_aleatoria].x != NULL){
                 inimigos[i].x = posicao_inimigos[posicao_aleatoria].x;
@@ -180,46 +181,6 @@ Tela criaFase(Tela tela,int nivel){ // nivel começa em 1
     return tela;
 }
 
-/*void desenha(){ //desenha sem colisão
-    glClear(GL_COLOR_BUFFER_BIT);
-    glColor3f(0, 0, 1);
-
-    glBegin(GL_POLYGON);
-        glVertex3f(posicao_player.x, posicao_player.y, 1);
-        glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y, 1);
-        glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y + tamanho_player.comprimento, 1);
-        glVertex3f(posicao_player.x, posicao_player.y + tamanho_player.comprimento, 1);
-    glEnd();
-
-    glColor3f(0, 0, 0);
-    if(quantidade_tiros >= -1){
-        for(int i = 0; i < quantidade_tiros; i++){
-            glBegin(GL_POLYGON);
-                glVertex3f(tiros[i].x, tiros[i].y, 1);
-                glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y, 1);
-                glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y + tamanho_tiros.comprimento, 1);
-                glVertex3f(tiros[i].x, tiros[i].y + tamanho_tiros.comprimento, 1);
-            glEnd();
-        }
-    }
-    glColor3f(1, 0, 0);
-    if(nivel ==1){
-        for(int i = 0; i < quantidade_inimigos; i++){
-            glBegin(GL_POLYGON);
-                glVertex3f(inimigos[i].x, inimigos[i].y, 1);
-                glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y, 1);
-                glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y + tamanho_inimigos.comprimento, 1);
-                glVertex3f(inimigos[i].x, inimigos[i].y + tamanho_inimigos.comprimento, 1);
-            glEnd();
-        }
-    }
-
-    glutSwapBuffers();
-    //glutPostRedisplay();
-    //glutTimerFunc(periodo, desenha, periodo);
-
-}*/
-
 void desenha(){ //desenha com colisão
     glClear(GL_COLOR_BUFFER_BIT);
     glColor3f(0, 0, 1);
@@ -235,7 +196,6 @@ void desenha(){ //desenha com colisão
     //Desenhar tiros
     //glColor3f(0, 0, 0);
     glColor3f(1, 1, 1);
-    //if(quantidade_tiros >= -1){
         for(int i = 0; i < quantidade_tiros; i++){
             //condição para o programa não desenhar o tiro sempre para não perder tanto desempenho
             if(!tiros[i].y < 500){
@@ -247,7 +207,6 @@ void desenha(){ //desenha com colisão
                 glEnd();
             }
         }
-    //}
     //Desenhar inimigos
     glColor3f(1, 0, 0);
     //if(nivel == 1){
@@ -263,7 +222,6 @@ void desenha(){ //desenha com colisão
         }
 
         glColor3f(1, 1, 1);
-    //if(quantidade_tiros >= -1){
         for(int i = 0; i < quantidade_tiros_inimigos; i++){
             //condição para o programa não desenhar o tiro sempre para não perder tanto desempenho
             if(tiros_inimigos[i].y > 0){
@@ -275,11 +233,8 @@ void desenha(){ //desenha com colisão
                 glEnd();
             }
         }
-    //}
 
     glutSwapBuffers();
-    //glutPostRedisplay();
-    //glutTimerFunc(periodo, desenha, periodo);
 
 }
 
@@ -476,30 +431,6 @@ void teclado(unsigned char key, int x, int y) {
    }
 }
 
-//Lógica -> criar variáveis na classe que determina para onde eles estão andando e, caso para baixo,
-//quanto falta
-
-/*void movimenta_inimigos(){
-    for(int i = 0; i < quantidade_inimigos; i++){
-        if(((int)(inimigos[i].y / 45)) % 2 == 0){ //inimigo move para esquerda
-            inimigos[i].x -= tamanho_inimigos.largura/2;
-            //inimigos[i].faltaPara45 = 45;
-            if(inimigos[i].x == 2 && inimigos[i].faltaPara45 > 0){
-                inimigos[i].y -= (tamanho_inimigos.largura/2);
-                inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
-            }
-        }
-        else{ //inimigo move para direita
-            inimigos[i].x += tamanho_inimigos.largura/2;
-            if(inimigos[i].x == 488 && inimigos[i].faltaPara45 > 0){
-                inimigos[i].y -= (tamanho_inimigos.largura/2);
-                inimigos[i].faltaPara45 -= tamanho_inimigos.comprimento/2;
-            }
-        }
-    }
-}*/
-
-
 /*void movimenta_inimigos(){
     for(int i = 0; i < quantidade_inimigos; i++){
         if(inimigos[i].colidiu == false){
@@ -572,7 +503,7 @@ void teclado(unsigned char key, int x, int y) {
     }
 }*/
 
-void movimenta_inimigos(){
+void movimenta_inimigos(){ //movimenta_inimigos com variação do tamanho do inimigo
     for(int i = 0; i < quantidade_inimigos; i++){
         if(inimigos[i].colidiu == false){
             //printf("Que y: %.2f\n", inimigos[i].y);
@@ -635,7 +566,6 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                     if(tiros[i].x >= inimigos[j].x && tiros[i].x <= inimigos[j].x + tamanho_inimigos.largura || tiros[i].x + tamanho_tiros.largura >= inimigos[j].x && tiros[i].x + tamanho_tiros.largura <= inimigos[j].x + tamanho_inimigos.largura){
                         tiros[i].y = 500;
                         inimigos[j].colidiu = true;
-                        //tiros[i].colidiu = true;
                         inimigos[j].y = 550;
                         inimigos[j].x = -30;
                         inimigos_mortos++;
@@ -650,19 +580,18 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                             //inimigos = (Posicao*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Posicao));
                             inimigos = (Inimigo*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
                             quantidade_tiros = 0;
-                            tamanhoInimigo -= 0.2;
-                            tempo_tiro -= 2;
-                            variacao_nivel += 0.05;
-                            //variacao_tempo -= 10;
+                            tamanhoInimigo -= VARIACAO_TAMANHO_INIMIGOS;
+                            tempo_tiro -= 2; //tempo dos tiros inimigos
+                            variacao_nivel += 0.05; //velocidade dos tiros inimigos
                             inicializa();
-                            if(quantidade_inimigos > NUM_MAX_INIMIGOS){
+                            if(quantidade_inimigos > NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
                                 quantidade_inimigos = NUM_MAX_INIMIGOS;
                             }
-                            if(tempo_tiro <= 50){
+                            if(tempo_tiro <= 50){ //limite do tempo dos tiros dos inimigos
                                 tempo_tiro = 55;
                             }
-                            if(tamanhoInimigo < 6){
-                                tamanhoInimigo = 6;
+                            if(tamanhoInimigo < TAMANHO_MINIMO_INIMIGOS){ //Limite do tamanho do inimigo
+                                tamanhoInimigo = TAMANHO_MINIMO_INIMIGOS;
                             }
                         }
                     }
@@ -686,7 +615,6 @@ void movimenta_tiros_inimigos(){
                     inimigos_mortos = 0;
                     tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
                     tiros_inimigos = (Posicao*) realloc(tiros_inimigos, 1 * sizeof(Posicao));
-                    //inimigos = (Posicao*) realloc(inimigos, (quantidade_inimigos + 3)* sizeof(Posicao));
                     inimigos = (Inimigo*) realloc(inimigos, (quantidade_inimigos + 3)* sizeof(Inimigo));
                     inicializa();
                 }
@@ -733,11 +661,11 @@ void atualizaCena(int periodo) {
                     }
                 }
             }
-            if(tempo % 2 == 0){ //20
+            if(tempo % 20 == 0){ //20
                 movimenta_inimigos();
             }
         }
-        //movimenta_tiros_inimigos(); //Descomentar
+        movimenta_tiros_inimigos(); //Descomentar
         glutPostRedisplay();
     }
     //glutPostRedisplay();
@@ -754,7 +682,7 @@ int main(int argc, char** argv){
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(800, 640);
-    glutInitWindowPosition(100, 100);
+    glutInitWindowPosition(250, 250);
 
     glutCreateWindow("Galaxian - TP1");
     inicializa();
