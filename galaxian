@@ -13,7 +13,7 @@
 #define LINHAS_INIMIGOS 3 //Quantas linhas de inimigos vai ter
 #define POSICAO_INICIAL_INIMIGOS_Y 450
 #define TAMANHO_MINIMO_INIMIGOS 6
-#define VARIACAO_TAMANHO_INIMIGOS 0.5
+#define VARIACAO_TAMANHO_INIMIGOS 0.2
 
 /*GLuint loadTexture(const std::string&fileName){
     SDL_Surface *imagem = IMG_Load(fileName.c_str());
@@ -430,15 +430,15 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                         inimigos[j].y = 550;
                         inimigos[j].x = -30;
                         inimigos_mortos++;
-                        printf("Inimigos mortos: %d\n", inimigos_mortos);
-                        printf("Quantidade de inimigos vivos restantes: %d\n", quantidade_inimigos - inimigos_mortos);
-                        printf("Quantidade de tiros inimigo: %d\n", quantidade_tiros_inimigos);
+                        //printf("Inimigos mortos: %d\n", inimigos_mortos);
+                        //printf("Quantidade de inimigos vivos restantes: %d\n", quantidade_inimigos - inimigos_mortos);
+                        //printf("Quantidade de tiros inimigo: %d\n", quantidade_tiros_inimigos);
                         if(inimigos_mortos == quantidade_inimigos){
                             quantidade_inimigos++; //próxima fase
                             inimigos_mortos = 0;
                             quantidade_tiros_inimigos = 0;
-                            printf("nivel: %d\n", nivel);
                             nivel++;
+                            printf("Nivel: %d\n\n", nivel);
                             tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
                             //inimigos = (Posicao*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Posicao));
 
@@ -447,7 +447,7 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                             tempo_tiro -= 2; //tempo dos tiros inimigos
                             variacao_nivel += 0.05; //velocidade dos tiros inimigos
 
-                            if(quantidade_inimigos >= NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
+                            if(quantidade_inimigos == NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
                                 quantidade_inimigos = NUM_MAX_INIMIGOS-1;
                             }
                             if(tempo_tiro <= 50){ //limite do tempo dos tiros dos inimigos
