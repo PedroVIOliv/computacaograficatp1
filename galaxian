@@ -4,13 +4,36 @@
 #include <time.h>
 #include <stdio.h>
 //#include <SDL2/SDL.h>
+//#include <SDL/SDL.h>
+//#include "SDL/SDL_opengl.h"
+//#include "SDL/SDL_image"
 #define DISTANCIA_X 50 //Distancia horizontal inicial entre cada inimigo, considerando a posicao "x" de cada inimigo
 #define DISTANCIA_Y 60 //Distancia vertical inicial entre cada inimigo, considerando a posicao "y" de cada inimigo
 #define NUM_MAX_INIMIGOS 27 //Tem que ser múltiplo de "LINHAS_INIMIGOS"    || NUM_MAX_INIMIGOS / LINHAS_INIMIGOS resulta em quantas colunas de inimigos
 #define LINHAS_INIMIGOS 3 //Quantas linhas de inimigos vai ter
 #define POSICAO_INICIAL_INIMIGOS_Y 450
 #define TAMANHO_MINIMO_INIMIGOS 6
-#define VARIACAO_TAMANHO_INIMIGOS 0.2
+#define VARIACAO_TAMANHO_INIMIGOS 0.5
+
+/*GLuint loadTexture(const std::string&fileName){
+    SDL_Surface *imagem = IMG_Load(fileName.c_str());
+    SDL_DisplayFormatAlpha(imagem);
+    unsigned object(0);
+    glGenTextures(1, &object);
+    glBindTexture(GL_TEXTURE_2D, object);
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imagem->w, imagem->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagem->pixels);
+
+    SDL_FreeSurface(imagem);
+
+    return object;
+}*/
 
 class Posicao{
 public:
@@ -414,16 +437,18 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                             quantidade_inimigos++; //próxima fase
                             inimigos_mortos = 0;
                             quantidade_tiros_inimigos = 0;
+                            printf("nivel: %d\n", nivel);
+                            nivel++;
                             tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
                             //inimigos = (Posicao*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Posicao));
-                            inimigos = (Inimigo*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
+
                             quantidade_tiros = 0;
                             tamanhoInimigo -= VARIACAO_TAMANHO_INIMIGOS;
                             tempo_tiro -= 2; //tempo dos tiros inimigos
                             variacao_nivel += 0.05; //velocidade dos tiros inimigos
-                            inicializa();
-                            if(quantidade_inimigos > NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
-                                quantidade_inimigos = NUM_MAX_INIMIGOS;
+
+                            if(quantidade_inimigos >= NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
+                                quantidade_inimigos = NUM_MAX_INIMIGOS-1;
                             }
                             if(tempo_tiro <= 50){ //limite do tempo dos tiros dos inimigos
                                 tempo_tiro = 55;
@@ -431,6 +456,8 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                             if(tamanhoInimigo < TAMANHO_MINIMO_INIMIGOS){ //Limite do tamanho do inimigo
                                 tamanhoInimigo = TAMANHO_MINIMO_INIMIGOS;
                             }
+                            inimigos = (Inimigo*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
+                            inicializa();
                         }
                     }
                 }
@@ -499,7 +526,7 @@ void atualizaCena(int periodo) {
                     }
                 }
             }
-            if(tempo % 20 == 0){ //20
+            if(tempo % 5 == 0){ //20
                 movimenta_inimigos();
             }
         }
@@ -521,7 +548,10 @@ int main(int argc, char** argv){
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(800, 640);
     glutInitWindowPosition(250, 250);
-
+    //
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //
     glutCreateWindow("Galaxian - TP1");
     inicializa();
     glutDisplayFunc(desenha);
