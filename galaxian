@@ -12,15 +12,6 @@
 #define TAMANHO_MINIMO_INIMIGOS 6
 #define VARIACAO_TAMANHO_INIMIGOS 0.2
 
-
-class Tela{
-public:
-    int posPlayer;
-    int tiles[16][16];
-    int gameover = 0;
-
-};
-
 class Posicao{
 public:
     float x;
@@ -65,7 +56,8 @@ int tempo_tiro = 300; //Frequência inicial dos tiros dos inimigos
 float variacao_nivel = 1; //velocidade dos tiros_inimigos
 int primeiro_tiro = 0;
 float tamanhoInimigo = 20;
-//int variacao_tempo = 1;
+int frame_atual_player = 0;
+int quantidade_frames_player = 4;
 
 
 void cria_tiros_inimigos(){
@@ -156,31 +148,6 @@ void inicializa(){
 
 }
 
-Tela criaFase(Tela tela,int nivel){ // nivel começa em 1
-    int i=15;
-    int j = 15;
-    tela.posPlayer = 8;
-    for(i;i>=0;i--){ //marcará inimigos com base no nivel
-        if(nivel>1){
-            nivel -=2;
-            for(j;j>=0;j--){
-                tela.tiles[i][j]==1;//1 marcará inimigo
-            }
-        }
-        else{
-            if(nivel == 1){
-                nivel-=1;
-                for(j;j>=0;j--){
-                tela.tiles[i][j]==1;//1 marcará inimigo até metade da linha
-                }
-                break;
-            }
-            else break;
-        }
-    }
-    return tela;
-}
-
 void desenha(){ //desenha com colisão
     glClear(GL_COLOR_BUFFER_BIT);
     glColor3f(0, 0, 1);
@@ -248,135 +215,6 @@ void redimensiona(int w, int h) {
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-}
-
-
-
-Tela atualizaFase(Tela tela, int acao){//atualiza o jogo com o passar do tempo
-//acao é o input do jogador, -1 se foi para a esquerda, 0 se n fez nada, 1 se foi para a direita e 2 se atirou
-
-    switch(acao){
-    case 1:
-        if(tela.posPlayer<15)tela.posPlayer+=1;
-        break;
-    case -1:
-        if(tela.posPlayer>0)tela.posPlayer-=1;
-        break;
-    case 2:
-        if(tela.tiles[15][tela.posPlayer]==1){
-            tela.tiles[15][tela.posPlayer] = 0;
-        }
-        else{
-            tela.tiles[15][tela.posPlayer] = 2;
-        }
-    }
-
-    int i,j;
-
-    for(i = 15;i>=0;i--){ //atualiza grid
-        if(i%2!=0){
-            for(j=0;j<16;j++){ //da esquerda pra direita
-                switch(tela.tiles[i][j]){
-                case 1://inimigo
-                    if(j>0){
-                        if(tela.tiles[i][j-1]==0)tela.tiles[i][j-1]=tela.tiles[i][j]; //inimigo anda pra esquerda
-                        else tela.tiles[i][j-1] = 0; //com obstruçao, obstrucao e inimigo morrem
-                        tela.tiles[i][j] = 0;
-                    }
-                    else{
-                        if(i == 15){
-                            tela.gameover = 1;
-                            return tela;
-                        }else{
-                            if(tela.tiles[i+1][j]==0)tela.tiles[i+1][j]=tela.tiles[i][j]; //inimigo anda pra baixo
-                        else tela.tiles[i+1][j] = 0; //com obstruçao, obstrucao e inimigo morrem
-                        tela.tiles[i][j] = 0;
-                        }
-                    }
-                    break;
-                case 2://tiro amadurecendo
-                    tela.tiles[i][j] = 4; //tiro se prepara para andar 2 vezes
-                    break;
-                case 3://tiro anda
-                    if(i==0)tela.tiles[i][j] = 0;
-                    else{
-                    if(tela.tiles[i-1][j]==1){
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=0;
-                    }
-                    else{
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=2;
-                    }}
-                    break;
-                case 4://tiro anda
-                    if(i==0)tela.tiles[i][j] = 0;
-                    else{
-                    if(tela.tiles[i-1][j]==1){
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=0;
-                    }
-                    else{
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=3;
-                    }}
-                    break;
-            }
-        }
-    }else{
-            for(j=15;j>=0;j--){ //da direita pra esquerda
-                switch(tela.tiles[i][j]){
-                case 1://inimigo
-                    if(j<16){
-                        if(tela.tiles[i][j+1]==0)tela.tiles[i][j+1]=tela.tiles[i][j]; //inimigo anda pra esquerda
-                        else tela.tiles[i][j+1] = 0; //com obstruçao, obstrucao e inimigo morrem
-                        tela.tiles[i][j] = 0;
-                    }
-                    else{
-                        if(i == 15){
-                            tela.gameover = 1;
-                            return tela;
-                        }else{
-                            if(tela.tiles[i+1][j]==0)tela.tiles[i+1][j]=tela.tiles[i][j]; //inimigo anda pra baixo
-                        else tela.tiles[i+1][j] = 0; //com obstruçao, obstrucao e inimigo morrem
-                        tela.tiles[i][j] = 0;
-                        }
-                    }
-                    break;
-                case 2://tiro amadurecendo
-                    tela.tiles[i][j] = 4; //tiro se prepara para andar 2 vezes
-                    break;
-                case 3://tiro anda
-                    if(i==0)tela.tiles[i][j] = 0;
-                    else{
-                    if(tela.tiles[i-1][j]==1){
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=0;
-                    }
-                    else{
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=2;
-                    }}
-                    break;
-                case 4://tiro anda
-                    if(i==0)tela.tiles[i][j] = 0;
-                    else{
-                    if(tela.tiles[i-1][j]==1){
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=0;
-                    }
-                    else{
-                        tela.tiles[i][j] = 0;
-                        tela.tiles[i-1][j]=3;
-                    }
-                    }
-                    break;
-                }
-            }
-        }
-
-
-    }
 }
 
 void teclado(unsigned char key, int x, int y) {
