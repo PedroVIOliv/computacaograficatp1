@@ -3,37 +3,23 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
-//#include <SDL2/SDL.h>
-//#include <SDL/SDL.h>
-//#include "SDL/SDL_opengl.h"
-//#include "SDL/SDL_image"
+#include <SOIL/SOIL.h>
 #define DISTANCIA_X 50 //Distancia horizontal inicial entre cada inimigo, considerando a posicao "x" de cada inimigo
 #define DISTANCIA_Y 60 //Distancia vertical inicial entre cada inimigo, considerando a posicao "y" de cada inimigo
 #define NUM_MAX_INIMIGOS 27 //Tem que ser múltiplo de "LINHAS_INIMIGOS"    || NUM_MAX_INIMIGOS / LINHAS_INIMIGOS resulta em quantas colunas de inimigos
 #define LINHAS_INIMIGOS 3 //Quantas linhas de inimigos vai ter
 #define POSICAO_INICIAL_INIMIGOS_Y 450
 #define TAMANHO_MINIMO_INIMIGOS 6
-#define VARIACAO_TAMANHO_INIMIGOS 0.5
+#define VARIACAO_TAMANHO_INIMIGOS 0.2
+#define tempo_animacao_player 10
+#define tempo_animacao_inimigo 70
+#define tempo_animacao_background 12
 
-/*GLuint loadTexture(const std::string&fileName){
-    SDL_Surface *imagem = IMG_Load(fileName.c_str());
-    SDL_DisplayFormatAlpha(imagem);
-    unsigned object(0);
-    glGenTextures(1, &object);
-    glBindTexture(GL_TEXTURE_2D, object);
+struct Textura {
+    GLuint id;
+    char arquivo[50];
+};
 
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imagem->w, imagem->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagem->pixels);
-
-    SDL_FreeSurface(imagem);
-
-    return object;
-}*/
 
 class Posicao{
 public:
@@ -58,6 +44,16 @@ public:
     int jaMoveuParaBaixo;
 };
 
+static struct Textura texturas[] = {{0, "nave1.png"}, {0, "nave2.png"}, {0, "nave3.png"}, {0, "nave4.png"}};
+static struct Textura texturas_inimigos[] = {{0, "inimigo1.png"}, {0, "inimigo2.png"}, {0, "inimigo3.png"}};
+static struct Textura texturas_background[] = {{0, "background.png"}, {0, "background1.png"}, {0, "background2.png"}};
+
+
+GLubyte textura_player_atual = 0;
+GLubyte quantidade_textura_player = 4;
+GLubyte textura_inimigo_atual = 0;
+GLubyte textura_background_atual = 0;
+
 Posicao posicao_player;
 Tamanho tamanho_player;
 Posicao *tiros = (Posicao*) malloc(1 * sizeof (Posicao));
@@ -79,8 +75,14 @@ int tempo_tiro = 300; //Frequência inicial dos tiros dos inimigos
 float variacao_nivel = 1; //velocidade dos tiros_inimigos
 int primeiro_tiro = 0;
 float tamanhoInimigo = 20;
-int frame_atual_player = 0;
-int quantidade_frames_player = 4;
+
+GLuint carregaTextura(const char* arquivo){
+    GLuint idTextura = SOIL_load_OGL_texture(arquivo, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+    if(idTextura == 0){
+        printf("Erro do SOIL ao corregar %s: '%s'\n", arquivo, SOIL_last_result());
+    }
+    return idTextura;
+}
 
 
 void cria_tiros_inimigos(){
@@ -111,7 +113,6 @@ void cria_tiros_inimigos(){
     }
 }
 
-
 void inicializa(){
     glClear(GL_COLOR_BUFFER_BIT);
     //glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -120,7 +121,7 @@ void inicializa(){
     posicao_player.x = 240; //Posicao inicial do jogador
     posicao_player.y = 0;
     tamanho_player.comprimento = 30; //Tamanho do jogador
-    tamanho_player.largura = 10;
+    tamanho_player.largura = 20;
     tamanho_tiros.comprimento = 5; //Tamanho dos tiros
     tamanho_tiros.largura = 2;
     tamanho_inimigos.comprimento = tamanhoInimigo; //Tamanho do inimigo, o qual vai variar com o passar das fases
@@ -168,12 +169,26 @@ void inicializa(){
     tempo = -200;
     primeiro_tiro = 0;
     inimigos_mortos = 0;
+    //glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    texturas[0].id = carregaTextura(texturas[0].arquivo);
+    texturas[1].id = carregaTextura(texturas[1].arquivo);
+    texturas[2].id = carregaTextura(texturas[2].arquivo);
+    texturas[3].id = carregaTextura(texturas[3].arquivo);
+    texturas_inimigos[0].id = carregaTextura(texturas_inimigos[0].arquivo);
+    texturas_inimigos[1].id = carregaTextura(texturas_inimigos[1].arquivo);
+    texturas_inimigos[2].id = carregaTextura(texturas_inimigos[2].arquivo);
+    texturas_background[0].id = carregaTextura(texturas_background[0].arquivo);
+    texturas_background[1].id = carregaTextura(texturas_background[1].arquivo);
+    texturas_background[2].id = carregaTextura(texturas_background[2].arquivo);
 
 }
 
-void desenha(){ //desenha com colisão
+
+/*void desenha(){ //desenha com colisão
     glClear(GL_COLOR_BUFFER_BIT);
-    glColor3f(0, 0, 1);
+    glColor3f(0, 0, 1); //Antes
 
     //Desenhar jogador
     glBegin(GL_POLYGON);
@@ -182,6 +197,7 @@ void desenha(){ //desenha com colisão
         glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y + tamanho_player.comprimento, 1);
         glVertex3f(posicao_player.x, posicao_player.y + tamanho_player.comprimento, 1);
     glEnd();
+
 
     //Desenhar tiros
     //glColor3f(0, 0, 0);
@@ -226,14 +242,121 @@ void desenha(){ //desenha com colisão
 
     glutSwapBuffers();
 
+}*/
+
+
+void desenha(){ //desenha com colisão
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glColor3f(1, 1, 1); //Antes
+
+
+    //Background
+
+
+    glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texturas_background[textura_background_atual].id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glPushMatrix();
+    glBegin(GL_POLYGON);
+        glTexCoord2f(0, 0);glVertex3f(0, 0, 1);
+        glTexCoord2f(1, 0);glVertex3f(500, 0, 1);
+        glTexCoord2f(1, 1);glVertex3f(500, 500, 1);
+        glTexCoord2f(0, 1);glVertex3f(0, 500, 1);
+    glEnd();
+    glPopMatrix();
+    glDisable(GL_TEXTURE_2D);
+
+    //
+
+    glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texturas[textura_player_atual].id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //Desenhar jogador
+    glPushMatrix();
+    glBegin(GL_POLYGON);
+        glTexCoord2f(0, 0);glVertex3f(posicao_player.x, posicao_player.y, 1);
+        glTexCoord2f(1, 0);glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y, 1);
+        glTexCoord2f(1, 1);glVertex3f(posicao_player.x + tamanho_player.largura, posicao_player.y + tamanho_player.comprimento, 1);
+        glTexCoord2f(0, 1);glVertex3f(posicao_player.x, posicao_player.y + tamanho_player.comprimento, 1);
+    glEnd();
+    glPopMatrix();
+
+    glDisable(GL_TEXTURE_2D);
+    //Desenhar tiros
+    //glColor3f(0, 0, 0);
+        glColor3f(1, 0.58, 0);
+        for(int i = 0; i < quantidade_tiros; i++){
+            //condição para o programa não desenhar o tiro sempre para não perder tanto desempenho
+            if(!tiros[i].y < 500){
+                glBegin(GL_POLYGON);
+                    glVertex3f(tiros[i].x, tiros[i].y, 1);
+                    glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y, 1);
+                    glVertex3f(tiros[i].x + tamanho_tiros.largura, tiros[i].y + tamanho_tiros.comprimento, 1);
+                    glVertex3f(tiros[i].x, tiros[i].y + tamanho_tiros.comprimento, 1);
+                glEnd();
+            }
+        }
+
+    glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texturas_inimigos[textura_inimigo_atual].id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glPushMatrix();
+    //Desenhar inimigos
+    glColor3f(1, 1, 1);
+    //if(nivel == 1){
+        for(int i = 0; i < quantidade_inimigos; i++){
+            if(!inimigos[i].colidiu){
+                glBegin(GL_POLYGON);
+                    glTexCoord2f(0, 0);glVertex3f(inimigos[i].x, inimigos[i].y, 1);
+                    glTexCoord2f(1, 0);glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y, 1);
+                    glTexCoord2f(1, 1);glVertex3f(inimigos[i].x + tamanho_inimigos.largura, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+                    glTexCoord2f(0, 1);glVertex3f(inimigos[i].x, inimigos[i].y + tamanho_inimigos.comprimento, 1);
+                glEnd();
+            }
+        }
+        glPopMatrix();
+        glDisable(GL_TEXTURE_2D);
+
+        //Desenhar tiros inimigos
+
+        glColor3f(1, 0.57, 0);
+        for(int i = 0; i < quantidade_tiros_inimigos; i++){
+            //condição para o programa não desenhar o tiro sempre para não perder tanto desempenho
+            if(tiros_inimigos[i].y > 0){
+                glBegin(GL_POLYGON);
+                    glVertex3f(tiros_inimigos[i].x, tiros_inimigos[i].y, 1);
+                    glVertex3f(tiros_inimigos[i].x + tamanho_tiros.largura, tiros_inimigos[i].y, 1);
+                    glVertex3f(tiros_inimigos[i].x + tamanho_tiros.largura, tiros_inimigos[i].y + tamanho_tiros.comprimento, 1);
+                    glVertex3f(tiros_inimigos[i].x, tiros_inimigos[i].y + tamanho_tiros.comprimento, 1);
+                glEnd();
+            }
+        }
+
+    glutSwapBuffers();
+
 }
 
-
 void redimensiona(int w, int h) {
-    glViewport(0, 0, w, h);
+    //glViewport(0, 0, w, h);
+    glViewport(0, 0, 800, 640);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+    //glOrtho(0, 500, 0, 500, -1, 1);
     glOrtho(0, 500, 0, 500, -1, 1);
 
     glMatrixMode(GL_MODELVIEW);
@@ -250,7 +373,7 @@ void teclado(unsigned char key, int x, int y) {
          exit(0);
          break;
       case 100: //Tecla "d" - Vai para direita
-        if(posicao_player.x < 490 && paused == false){
+        if(posicao_player.x < 480 && paused == false){
             posicao_player.x += tamanho_player.largura;
         }
         break;
@@ -274,9 +397,9 @@ void teclado(unsigned char key, int x, int y) {
         if(paused == false){
             quantidade_tiros += 2;
             tiros = (Posicao *) realloc(tiros, (quantidade_tiros + 7) * sizeof(Posicao));
-            tiros[quantidade_tiros-2].x = posicao_player.x;
+            tiros[quantidade_tiros-2].x = posicao_player.x + 3;
             tiros[quantidade_tiros - 2].y = posicao_player.y + tamanho_player.comprimento;
-            tiros[quantidade_tiros - 1].x = posicao_player.x + tamanho_player.largura - tamanho_tiros.largura;
+            tiros[quantidade_tiros - 1].x = posicao_player.x + tamanho_player.largura - tamanho_tiros.largura - 3;
             tiros[quantidade_tiros - 1].y = posicao_player.y + tamanho_player.comprimento;
         }
         break;
@@ -430,15 +553,15 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                         inimigos[j].y = 550;
                         inimigos[j].x = -30;
                         inimigos_mortos++;
-                        printf("Inimigos mortos: %d\n", inimigos_mortos);
-                        printf("Quantidade de inimigos vivos restantes: %d\n", quantidade_inimigos - inimigos_mortos);
-                        printf("Quantidade de tiros inimigo: %d\n", quantidade_tiros_inimigos);
+                        //printf("Inimigos mortos: %d\n", inimigos_mortos);
+                        //printf("Quantidade de inimigos vivos restantes: %d\n", quantidade_inimigos - inimigos_mortos);
+                        //printf("Quantidade de tiros inimigo: %d\n", quantidade_tiros_inimigos);
                         if(inimigos_mortos == quantidade_inimigos){
                             quantidade_inimigos++; //próxima fase
                             inimigos_mortos = 0;
                             quantidade_tiros_inimigos = 0;
-                            printf("nivel: %d\n", nivel);
                             nivel++;
+                            printf("Nivel: %d\n\n", nivel);
                             tiros = (Posicao*) realloc(tiros, 2 * sizeof(Posicao));
                             //inimigos = (Posicao*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Posicao));
 
@@ -446,8 +569,8 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                             tamanhoInimigo -= VARIACAO_TAMANHO_INIMIGOS;
                             tempo_tiro -= 2; //tempo dos tiros inimigos
                             variacao_nivel += 0.05; //velocidade dos tiros inimigos
-                            inicializa();
-                            if(quantidade_inimigos >= NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
+
+                            if(quantidade_inimigos == NUM_MAX_INIMIGOS){ //limite da quantidade de inimigos
                                 quantidade_inimigos = NUM_MAX_INIMIGOS-1;
                             }
                             if(tempo_tiro <= 50){ //limite do tempo dos tiros dos inimigos
@@ -457,6 +580,7 @@ void movimenta_tiros(){ //movimenta_tiros com colisão
                                 tamanhoInimigo = TAMANHO_MINIMO_INIMIGOS;
                             }
                             inimigos = (Inimigo*) realloc (inimigos, (quantidade_inimigos + 1) * sizeof(Inimigo));
+                            inicializa();
                         }
                     }
                 }
@@ -530,6 +654,28 @@ void atualizaCena(int periodo) {
             }
         }
         movimenta_tiros_inimigos(); //Descomentar
+
+
+        if(tempo % tempo_animacao_player == 0){
+            textura_player_atual++;
+            if(textura_player_atual == quantidade_textura_player){
+                textura_player_atual = 0;
+            }
+        }
+
+        if(tempo % tempo_animacao_inimigo == 0){
+            textura_inimigo_atual++;
+            if(textura_inimigo_atual == 3){
+                textura_inimigo_atual = 0;
+            }
+        }
+
+        if(tempo % tempo_animacao_background == 0){
+            textura_background_atual++;
+            if(textura_background_atual == 3){
+                textura_background_atual = 0;
+            }
+        }
         glutPostRedisplay();
     }
     //glutPostRedisplay();
@@ -548,8 +694,8 @@ int main(int argc, char** argv){
     glutInitWindowSize(800, 640);
     glutInitWindowPosition(250, 250);
     //
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //
     glutCreateWindow("Galaxian - TP1");
     inicializa();
